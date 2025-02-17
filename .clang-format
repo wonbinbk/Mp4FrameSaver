@@ -1,0 +1,21 @@
+---
+DisableFormat: true
+---
+Language: Cpp
+BasedOnStyle: llvm           # LLVM is the set of clang-format built in rules most closely resembling most existing Invenco C++ code
+IndentWidth: 4               # LLVM (and several other common standards) default is 2, but most Invenco code uses 4
+AccessModifierOffset: -4     # to match IndentWidth
+PointerAlignment: Left       # Most common standard is Left, LLVM is unusual in defaulting to Right
+ColumnLimit: 160             # Enforce line length limit to 160 characters
+BreakBeforeBraces: Stroustrup # Apply break before braces for clarity
+UseTab: Never
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortBlocksOnASingleLine: Always
+SpaceBeforeParens: ControlStatements
+IndentCaseLabels: false
+BinPackArguments: false
+BinPackParameters: false
+PenaltyReturnTypeOnItsOwnLine: 200
+AllowAllArgumentsOnNextLine: false
+AlwaysBreakTemplateDeclarations: Yes
