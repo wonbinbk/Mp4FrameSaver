@@ -2,24 +2,24 @@
 #define SERVICE_H
 #include <vector>
 #include <cstdint>
-#include <string>
 #include <thread>
+#include "MessageQueue.h"
 
 class Service {
 public:
-    Service(const std::string& queueName);
+    Service(MessageQueue& inQueue, MessageQueue& outQueue);
     virtual ~Service();
+    void startThread();
 
 protected:
     virtual void processMessage(const std::vector<uint8_t>& message) = 0;
-    void startThread();
     void waitThread();
 
-private:
-    void pollQueue();
+    MessageQueue& mInQueue;
+    MessageQueue& mOutQueue;
 
-    std::string mQueueName;
-    int mDescriptor = -1;
+private:
+    void pollInQueue();
     std::thread task;
 };
 #endif // SERVICE_H
