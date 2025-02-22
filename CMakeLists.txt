@@ -17,6 +17,7 @@ set(SOURCES
     source/FrameSaver.cpp
     source/Service.cpp
     source/MessageQueue.cpp
+    source/Utils.cpp
 )
 
 add_executable(mp4FrameSaver ${SOURCES})

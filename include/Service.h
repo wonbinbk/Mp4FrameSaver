@@ -1,7 +1,5 @@
 #ifndef SERVICE_H
 #define SERVICE_H
-#include <vector>
-#include <cstdint>
 #include <thread>
 #include "MessageQueue.h"
 
@@ -9,10 +7,16 @@ class Service {
 public:
     Service(MessageQueue& inQueue, MessageQueue& outQueue);
     virtual ~Service();
+
+    Service(const Service&) = delete;
+    Service(Service&&) = delete;
+    Service& operator=(const Service&) = delete;
+    Service& operator=(Service&&) = delete;
+
     void startThread();
 
 protected:
-    virtual void processMessage(const std::vector<uint8_t>& message) = 0;
+    virtual void processMessage(const std::string& message) = 0;
     void waitThread();
 
     MessageQueue& mInQueue;

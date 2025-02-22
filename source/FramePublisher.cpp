@@ -1,4 +1,5 @@
 #include "FramePublisher.h"
+#include "Utils.h"
 #include <fcntl.h>
 #include <opencv2/videoio.hpp>
 #include <spdlog/spdlog.h>
@@ -90,7 +91,9 @@ void FramePublisher::processVideoThread(const std::string& filePath)
     mBusy = true;
 
     while (cap.read(frame)) {
-        copyFrameToShm(frame);
+        if (!Utils::writeFrameToShm(frame, mShmFd)) {
+            continue;
+        }
         // Send an acknowledge messge to FrameResizer so it starts processing the frame on shared memory
         mOutQueue.send("ACK");
         {
@@ -101,25 +104,4 @@ void FramePublisher::processVideoThread(const std::string& filePath)
     }
 
     mBusy = false;
-}
-
-bool FramePublisher::copyFrameToShm(const cv::Mat& frame)
-{
-    const auto frameMemSize = frame.total() * frame.elemSize();
-    if (ftruncate(mShmFd, frameMemSize) < 0) {
-            spdlog::error("FramePublisher: Failed to resize shared memory {}: {}", mShmFrame, strerror(errno));
-            return false;
-    }
-    auto* framePtr = mmap(0, frameMemSize, PROT_WRITE, MAP_SHARED, mShmFd, 0);
-    if (framePtr == MAP_FAILED) {
-        spdlog::error("FramePublisher: Failed to map shared memory with size {}", frameMemSize);
-        return false;
-    }
-
-    memcpy(framePtr, frame.data, frameMemSize);
-    if (munmap(framePtr, frameMemSize) < 0) {
-        spdlog::error("FramePublisher: Failed to unmap shared memory");
-    }
-
-    return true;
 }

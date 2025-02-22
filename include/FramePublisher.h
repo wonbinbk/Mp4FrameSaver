@@ -22,7 +22,6 @@ private:
     void processVideo(const std::string& message);
     void processVideoThread(const std::string& filePath);
     void joinVideoThread();
-    bool copyFrameToShm(const cv::Mat& frame);
 
     std::string mShmFrame;
     int mShmFd = -1;

@@ -26,7 +26,7 @@ void Service::waitThread()
 
 void Service::pollInQueue()
 {
-    std::vector<uint8_t> message;
+    std::string message;
     while (true) {
         if (!mInQueue.receive(message)) {
             // Error logged in MessageQueue
