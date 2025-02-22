@@ -2,9 +2,11 @@
 #include <fcntl.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
+#include <string>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <iostream>
 
 using nlohmann::json;
 
@@ -60,43 +62,33 @@ bool readFrameFromShm(cv::Mat& frame, int shmFd)
 
 namespace Utils::Json {
 
-std::string frameInfoToJson(const Message& message)
+std::string frameInfoToJson(const Message& info)
 {
-    json j;
-    j["type"] = message.type;
-    j["shmName"] = message.shmName;
-    j["vidPath"] = message.vidPath;
-    j["metadata"]["rows"] = message.metadata.rows;
-    j["metadata"]["columns"] = message.metadata.columns;
-    j["metadata"]["channels"] = message.metadata.channels;
-    j["metadata"]["type"] = message.metadata.type;
+    const auto j = json{{"vidPath", info.vidPath}, {"type", static_cast<int>(info.type)}, {"frameInfo", info.frameInfo}};
 
     return j.dump();
 }
 
 Message jsonToFrameInfo(const std::string& jsonString)
 {
-    Message message;
     try {
+        Message info;
         auto j = json::parse(jsonString);
-        message.type = j["type"];
-        message.shmName = j["shmName"];
-        message.vidPath = j["vidPath"];
-        message.metadata.rows = j["metadata"]["rows"];
-        message.metadata.columns = j["metadata"]["columns"];
-        message.metadata.channels = j["metadata"]["channels"];
-        message.metadata.type = j["metadata"]["type"];
+        j.at("vidPath").get_to(info.vidPath);
+        int typeInt;
+        j.at("type").get_to(typeInt);
+        info.type = static_cast<MESSAGE_TYPE_ENUMS>(typeInt);
+        j.at("frameInfo").get_to(info.frameInfo);
+        return info;
     }
-    catch(const json::parse_error& e) {
+    catch (const json::parse_error& e) {
         spdlog::error("Utils::Json: failed to parse json string: {}. Error: {}", jsonString, e.what());
         return {};
     }
-    catch(const json::exception& e) {
+    catch (const json::exception& e) {
         spdlog::error("Utils::Json: exception when processing json string: {}. Error: {}", jsonString, e.what());
         return {};
     }
-
-    return message;
 }
 
 } // namespace Utils::Json

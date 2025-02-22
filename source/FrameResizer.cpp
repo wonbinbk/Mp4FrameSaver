@@ -6,8 +6,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-const cv::Size RESIZED_SIZE(960, 540);
-const cv::Size ORIGINAL_SIZE(480, 270);
+constexpr float RESIZED_SCALE = 2;
 
 FrameResizer::FrameResizer(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmFrame, const std::string& shmResizedFrame)
     : Service(inQueue, outQueue), mShmFrame(shmFrame), mShmResizedFrame(shmResizedFrame)
@@ -39,24 +38,32 @@ FrameResizer::~FrameResizer()
 
 void FrameResizer::processMessage(const std::string& message)
 {
-    if (message == "ACK") {
-        cv::Mat frame(ORIGINAL_SIZE, CV_8UC3);
-        if (!Utils::readFrameFromShm(frame, mShmFd)) {
+    const auto msg = Utils::Json::jsonToFrameInfo(message);
+
+    switch (msg.type) {
+    case MESSAGE_TYPE_ENUMS::ACK: {
+        cv::Mat frame(msg.frameInfo.rows, msg.frameInfo.columns, msg.frameInfo.type);
+        if (!Utils::Shm::readFrameFromShm(frame, mShmFd)) {
             spdlog::error("FrameResizer: failed to read original frame from shared memory");
             return;
         }
-        cv::Mat resizedFrame(RESIZED_SIZE, CV_8UC3);
+        cv::Mat resizedFrame(static_cast<int>(msg.frameInfo.rows * RESIZED_SCALE), static_cast<int>(msg.frameInfo.columns * RESIZED_SCALE), msg.frameInfo.type);
         cv::resize(frame, resizedFrame, resizedFrame.size());
-        if (!Utils::writeFrameToShm(resizedFrame, mShmResizedFd)) {
+        if (!Utils::Shm::writeFrameToShm(resizedFrame, mShmResizedFd)) {
             spdlog::error("FrameResizer: failed to write resized frame to shared memory");
             return;
         }
 
-        mOutQueue.send("ACK");
+
+        const Message outMsg(msg.vidPath, MESSAGE_TYPE_ENUMS::ACK, resizedFrame);
+        mOutQueue.send(Utils::Json::frameInfoToJson(outMsg));
+
         return;
     }
-
-    spdlog::warn("FrameResizer: unexpected message: {}", message);
+    case MESSAGE_TYPE_ENUMS::SENTINEL:
+	spdlog::warn("FrameResizer: unexpected message: {}", message);
+	break;
+    }
 }
 
 

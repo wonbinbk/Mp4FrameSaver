@@ -19,7 +19,7 @@ public:
 
 private:
     void processMessage(const std::string& message) override;
-    void processVideo(const std::string& message);
+    void processVideo(const std::string& videoPath);
     void processVideoThread(const std::string& filePath);
     void joinVideoThread();
 

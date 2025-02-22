@@ -7,6 +7,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+static constexpr const char* PATH_HEADER = "path:";
+static const size_t PATH_HEADER_SIZE = 5;
+
 FramePublisher::FramePublisher(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmFrame) : Service(inQueue, outQueue), mShmFrame(shmFrame)
 {
     mShmFd = shm_open(shmFrame.c_str(), O_CREAT | O_RDWR, 0644);
@@ -40,6 +43,14 @@ void FramePublisher::joinVideoThread()
  */
 void FramePublisher::processMessage(const std::string& message)
 {
+    // If message string starts with `path:` then the rest of the message is path to the input video file
+    // Alternatively, we can implement a MESSAGE_TYPE_ENUMS::CMD for this kind of message, but it is more complicated
+    // so for our purpose here, this works just fine
+    if (message.size() > PATH_HEADER_SIZE && message.substr(0, PATH_HEADER_SIZE) == PATH_HEADER) {
+	const auto videoPath = message.substr(PATH_HEADER_SIZE);
+        return processVideo(videoPath);
+    }
+
     if (message == "ACK") {
         // FrameSaver ACK that the pipeline is free now
         // notify other thread to send next frame
@@ -51,59 +62,56 @@ void FramePublisher::processMessage(const std::string& message)
         return;
     }
 
-    if (message.substr(0, 5) == "path:") {
-        spdlog::info("FramePublisher: start extracting frames from {}", message.substr(5));
-        return processVideo(message);
-    }
-
     spdlog::warn("FramePublisher: unexpected message: {}", message);
 }
 
-void FramePublisher::processVideo(const std::string& message)
+void FramePublisher::processVideo(const std::string& videoPath)
 {
     if (mBusy.load()) {
         spdlog::error("FramePublisher: Still busy processing file {}", mVideoFileName);
         return;
     }
 
-    mVideoFileName = message.substr(5);
-    if (mVideoFileName.empty()) {
+    if (videoPath.empty()) {
         spdlog::error("FramePublisher: No path in message");
         return;
     }
 
     joinVideoThread();
 
+    mVideoFileName = videoPath;
     mVideoTask = std::thread([this]() -> void { processVideoThread(mVideoFileName); });
 
     return;
 }
 
-void FramePublisher::processVideoThread(const std::string& filePath)
+void FramePublisher::processVideoThread(const std::string& videoPath)
 {
-    cv::VideoCapture cap(filePath);
+    cv::VideoCapture cap(videoPath);
     if (!cap.isOpened()) {
-        spdlog::error("FramePublisher: Path does not exist or file is corrupted: {}", filePath);
+        spdlog::error("FramePublisher: unable to open video in path {} for processing", videoPath);
         return;
     }
 
     cv::Mat frame;
     mBusy = true;
 
+    spdlog::info("FramePublisher: start extracting frames from {}", videoPath);
     while (cap.read(frame)) {
-        spdlog::info("Frame size: {} x {} x {}, type {}", frame.cols, frame.rows, frame.channels(), frame.type());
-        if (frame.empty() || !Utils::writeFrameToShm(frame, mShmFd)) {
+        if (frame.empty() || !Utils::Shm::writeFrameToShm(frame, mShmFd)) {
             spdlog::error("FramePublisher: failed to write this frame, go to next frame");
             continue;
         }
-        // Send an acknowledge messge to FrameResizer so it starts processing the frame on shared memory
-        mOutQueue.send("ACK");
+
+	Message msg(videoPath, MESSAGE_TYPE_ENUMS::ACK, frame);
+        mOutQueue.send(Utils::Json::frameInfoToJson(msg));
+
         {
             std::unique_lock<std::mutex> lock(mMutex);
             mCv.wait(lock, [&] { return mFrameProcessed; });
             mFrameProcessed = false;
         }
     }
-
+    spdlog::info("FramePublisher: done processing file {}", videoPath);
     mBusy = false;
 }

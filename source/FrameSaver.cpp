@@ -7,9 +7,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-const cv::Size ORIGINAL_SIZE(1024, 768);
-const cv::Size RESIZED_SIZE(640, 480);
-
 FrameSaver::FrameSaver(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmResizedFrame, const std::string& outputDir)
     : Service(inQueue, outQueue), mShmResizedFrame(shmResizedFrame), mOutputDir(outputDir)
 {
@@ -29,28 +26,51 @@ FrameSaver::~FrameSaver()
 
 void FrameSaver::processMessage(const std::string& message)
 {
-    if (message == "ACK") {
-        cv::Mat resizedFrame(RESIZED_SIZE, CV_8UC3);
-        if (!Utils::readFrameFromShm(resizedFrame, mShmResizedFd)) {
+    const auto msg = Utils::Json::jsonToFrameInfo(message);
+
+    switch (msg.type) {
+    case MESSAGE_TYPE_ENUMS::ACK: {
+        cv::Mat resizedFrame(msg.frameInfo.rows, msg.frameInfo.columns, msg.frameInfo.type);
+        if (!Utils::Shm::readFrameFromShm(resizedFrame, mShmResizedFd)) {
             spdlog::error("FrameSaver: failed to read resized frame from shared memory");
             return;
         }
-        saveFrame(resizedFrame);
+        const std::filesystem::path vidPath{msg.vidPath};
+	const auto innerDir = vidPath.stem().string();
+        saveFrame(innerDir, resizedFrame);
+	mOutQueue.send("ACK");
         return;
     }
-
-    spdlog::warn("FrameSaver: unexpected message: {}", message);
+    case MESSAGE_TYPE_ENUMS::SENTINEL:
+	spdlog::warn("FrameSaver: unexpected message: {}", message);
+	break;
+    }
 }
 
-void FrameSaver::saveFrame(const cv::Mat& frame)
+void FrameSaver::saveFrame(const std::string& innerDir, const cv::Mat& frame)
 {
+    if (innerDir.empty()) {
+	spdlog::error("FrameSaver: no directory to save frame");
+	return;
+    }
+    if (frame.empty()) {
+	spdlog::error("FrameSaver: no frame to save");
+	return;
+    }
+
     std::error_code ec;
-    std::filesystem::create_directories(mOutputDir, ec);
+    // reset frame count if we are to save in a different inner directory (ie: new video path)
+    if (innerDir != mInnerDir) {
+	mFrameCnt = 0;
+	mInnerDir = innerDir;
+    }
+
+    const auto targetDir = std::filesystem::path(mOutputDir).append(innerDir);
+    std::filesystem::create_directories(targetDir, ec);
     if (ec) {
-        spdlog::error("FrameSaver: failed to create directories {}: {}", mOutputDir, ec.message());
+        spdlog::error("FrameSaver: failed to create directories {}: {}", targetDir.string(), ec.message());
         return;
     }
-    const auto savedImgPath = std::filesystem::path(mOutputDir).append(std::to_string(mFrameCnt++) + ".jpg");
+    const auto savedImgPath = std::filesystem::path(targetDir).append(std::to_string(mFrameCnt++) + ".jpg");
     cv::imwrite(savedImgPath.string(), frame);
-    mOutQueue.send("ACK");
 }

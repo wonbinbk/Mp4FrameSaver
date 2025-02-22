@@ -16,9 +16,10 @@ public:
 
 private:
     void processMessage(const std::string& message) override;
-    void saveFrame(const cv::Mat& frame);
+    void saveFrame(const std::string& innerDir, const cv::Mat& frame);
     std::string mShmResizedFrame;
-    std::string mOutputDir {"resized"};
+    std::string mOutputDir;
+    std::string mInnerDir;
     int mShmResizedFd = -1;
     int mFrameCnt = 0;
 };
