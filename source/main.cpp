@@ -10,6 +10,7 @@ constexpr const char* PUBLISHER_IN_QUEUE="/PUBLISHER_IN_QUEUE";
 
 constexpr const char* SHM_FRAME="/SHM_ORIGINAL_FRAME";
 constexpr const char* SHM_RESIZED_FRAME="/SHM_RESIZED_FRAME";
+constexpr const char* DEFAULT_OUTPUT_DIR="/home/pokyuser/Mp4ResizedFrames";
 
 /*
  * Mp4FrameSaver
@@ -20,9 +21,15 @@ constexpr const char* SHM_RESIZED_FRAME="/SHM_RESIZED_FRAME";
  * FramePublish, FrameResizer and FrameSaver communicates via separate POSIX message queues but only for acknowledgement and image metadata information.
  * The actual frame pixel data is written to and read from share memory locations for efficiency.
  */
-int main()
+int main(int argc, char** argv)
 {
-    spdlog::info("Main Mp4FrameSaver");
+    if (argc > 2) {
+	spdlog::error("Too many arguments.\nUsage: {} [output_path]", argv[0]);
+	return -1;
+    }
+
+    const std::string outputDir = (argc == 2) ? argv[1] : DEFAULT_OUTPUT_DIR;
+
     MessageQueue resizerInQueue(RESIZER_IN_QUEUE, MessageQueue::DIRECTION::INPUT, true);
     MessageQueue saverInQueue(SAVER_IN_QUEUE, MessageQueue::DIRECTION::INPUT, true);
     MessageQueue publisherInQueue(PUBLISHER_IN_QUEUE, MessageQueue::DIRECTION::INPUT, true);
@@ -33,13 +40,12 @@ int main()
 
     FramePublisher publisher(publisherInQueue, publishOutQueue, SHM_FRAME);
     FrameResizer resizer(resizerInQueue, resizerOutQueue, SHM_FRAME, SHM_RESIZED_FRAME);
-    FrameSaver saver(saverInQueue, saverOutQueue, SHM_RESIZED_FRAME, "/home/thai/Mp4ResizedFrame");
+    FrameSaver saver(saverInQueue, saverOutQueue, SHM_RESIZED_FRAME, outputDir);
 
     publisher.startThread();
     resizer.startThread();
     saver.startThread();
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    saverOutQueue.send("path:/home/thai/source.mp4");
+    spdlog::info("Ready to process video file and output to {}. Listening on queue for 'path:path_to_video_file'", outputDir);
     for (;;) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
