@@ -4,7 +4,7 @@ project(Mp4FrameSaver)
 
 set(CMAKE_CXX_STANDARD 17)
 
-include(FetchContent)
+find_package(OpenCV REQUIRED)
 
 include_directories(include)
 
@@ -23,5 +23,4 @@ add_executable(mp4FrameSaver ${SOURCES})
 
 target_include_directories(mp4FrameSaver PUBLIC ${CMAKE_CURRENT_SOURCE_DIRS}/include)
 
-target_link_libraries(mp4FrameSaver pthread rt spdlog)
-
+target_link_libraries(mp4FrameSaver pthread rt ${OpenCV_LIBS} spdlog)
