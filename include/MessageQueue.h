@@ -1,8 +1,6 @@
 #ifndef MESSAGE_QUEUE_H
 #define MESSAGE_QUEUE_H
 #include <string>
-#include <vector>
-#include <cstdint>
 
 class MessageQueue {
 public:
@@ -14,11 +12,10 @@ public:
     ~MessageQueue();
 
     // Only on output queue, non block
-    bool send(const std::vector<uint8_t>& message);
     bool send(const std::string& message);
 
     // Only on input queue, block
-    bool receive(std::vector<uint8_t>& message);
+    bool receive(std::string& message);
 
 private:
     std::string mName;
