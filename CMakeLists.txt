@@ -25,3 +25,8 @@ add_executable(mp4FrameSaver ${SOURCES})
 target_include_directories(mp4FrameSaver PUBLIC ${CMAKE_CURRENT_SOURCE_DIRS}/include)
 
 target_link_libraries(mp4FrameSaver pthread rt ${OpenCV_LIBS} spdlog)
+
+include(FetchContent)
+FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
+FetchContent_MakeAvailable(json)
+target_link_libraries(mp4FrameSaver nlohmann_json::nlohmann_json)
