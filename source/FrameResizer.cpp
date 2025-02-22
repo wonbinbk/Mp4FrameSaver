@@ -6,8 +6,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-const cv::Size RESIZED_SIZE(640, 480);
-const cv::Size ORIGINAL_SIZE(1024, 768);
+const cv::Size RESIZED_SIZE(960, 540);
+const cv::Size ORIGINAL_SIZE(480, 270);
 
 FrameResizer::FrameResizer(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmFrame, const std::string& shmResizedFrame)
     : Service(inQueue, outQueue), mShmFrame(shmFrame), mShmResizedFrame(shmResizedFrame)

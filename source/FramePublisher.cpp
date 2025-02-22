@@ -40,7 +40,6 @@ void FramePublisher::joinVideoThread()
  */
 void FramePublisher::processMessage(const std::string& message)
 {
-    spdlog::info("FramePublisher: processMessage: message {} len {}", message, message.size());
     if (message == "ACK") {
         // FrameSaver ACK that the pipeline is free now
         // notify other thread to send next frame
@@ -53,10 +52,11 @@ void FramePublisher::processMessage(const std::string& message)
     }
 
     if (message.substr(0, 5) == "path:") {
+        spdlog::info("FramePublisher: start extracting frames from {}", message.substr(5));
         return processVideo(message);
     }
 
-    spdlog::warn("FramePublisher: No handle for message: {}", message);
+    spdlog::warn("FramePublisher: unexpected message: {}", message);
 }
 
 void FramePublisher::processVideo(const std::string& message)
@@ -91,7 +91,9 @@ void FramePublisher::processVideoThread(const std::string& filePath)
     mBusy = true;
 
     while (cap.read(frame)) {
-        if (!Utils::writeFrameToShm(frame, mShmFd)) {
+        spdlog::info("Frame size: {} x {} x {}, type {}", frame.cols, frame.rows, frame.channels(), frame.type());
+        if (frame.empty() || !Utils::writeFrameToShm(frame, mShmFd)) {
+            spdlog::error("FramePublisher: failed to write this frame, go to next frame");
             continue;
         }
         // Send an acknowledge messge to FrameResizer so it starts processing the frame on shared memory

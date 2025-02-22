@@ -24,11 +24,13 @@ int main()
 
     FramePublisher publisher(publisherInQueue, publishOutQueue, SHM_FRAME);
     FrameResizer resizer(resizerInQueue, resizerOutQueue, SHM_FRAME, SHM_RESIZED_FRAME);
-    FrameSaver saver(saverInQueue, saverOutQueue, SHM_RESIZED_FRAME);
+    FrameSaver saver(saverInQueue, saverOutQueue, SHM_RESIZED_FRAME, "/home/thai/Mp4FrameResizer");
 
     publisher.startThread();
     resizer.startThread();
     saver.startThread();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    saverOutQueue.send("path:/home/thai/source.mp4");
     for (;;) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }

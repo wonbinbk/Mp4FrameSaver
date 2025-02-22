@@ -10,8 +10,8 @@
 const cv::Size ORIGINAL_SIZE(1024, 768);
 const cv::Size RESIZED_SIZE(640, 480);
 
-FrameSaver::FrameSaver(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmResizedFrame)
-    : Service(inQueue, outQueue), mShmResizedFrame(shmResizedFrame)
+FrameSaver::FrameSaver(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmResizedFrame, const std::string& outputDir)
+    : Service(inQueue, outQueue), mShmResizedFrame(shmResizedFrame), mOutputDir(outputDir)
 {
     mShmResizedFd = shm_open(mShmResizedFrame.c_str(), O_RDONLY, 0644);
     if (mShmResizedFd < 0) {
@@ -45,7 +45,8 @@ void FrameSaver::processMessage(const std::string& message)
 void FrameSaver::saveFrame(const cv::Mat& frame)
 {
     std::error_code ec;
-    if (!std::filesystem::create_directories(mOutputDir, ec)) {
+    std::filesystem::create_directories(mOutputDir, ec);
+    if (ec) {
         spdlog::error("FrameSaver: failed to create directories {}: {}", mOutputDir, ec.message());
         return;
     }

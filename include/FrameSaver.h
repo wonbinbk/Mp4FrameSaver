@@ -6,7 +6,7 @@
 
 class FrameSaver : public Service {
 public:
-    FrameSaver(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmResizedFrame);
+    FrameSaver(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmResizedFrame, const std::string& outputDir);
     ~FrameSaver() override;
 
     FrameSaver(const FrameSaver&) = delete;
