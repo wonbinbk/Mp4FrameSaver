@@ -5,6 +5,7 @@ project(Mp4FrameSaver)
 set(CMAKE_CXX_STANDARD 17)
 
 find_package(OpenCV REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 include_directories(include)
 
@@ -23,12 +24,7 @@ add_executable(mp4FrameSaver ${SOURCES})
 
 target_include_directories(mp4FrameSaver PUBLIC ${CMAKE_CURRENT_SOURCE_DIRS}/include)
 
-target_link_libraries(mp4FrameSaver pthread rt ${OpenCV_LIBS} spdlog)
-
-include(FetchContent)
-FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz)
-FetchContent_MakeAvailable(json)
-target_link_libraries(mp4FrameSaver nlohmann_json::nlohmann_json)
+target_link_libraries(mp4FrameSaver pthread rt ${OpenCV_LIBS} spdlog nlohmann_json::nlohmann_json)
 
 # A small client app to set video file source for the mp4FrameSaver service
 set(CLIENT_SOURCES
