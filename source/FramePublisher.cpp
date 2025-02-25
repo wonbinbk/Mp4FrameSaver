@@ -103,7 +103,7 @@ void FramePublisher::processVideoThread(const std::string& videoPath)
             continue;
         }
 
-	Message msg(videoPath, MESSAGE_TYPE_ENUMS::ACK, frame);
+        Message msg(videoPath, MESSAGE_TYPE_ENUMS::ACK, frame);
         mOutQueue.send(Utils::Json::frameInfoToJson(msg));
 
         {

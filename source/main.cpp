@@ -1,16 +1,9 @@
-#include "MessageQueue.h"
+#include "Config.h"
 #include "FramePublisher.h"
 #include "FrameResizer.h"
 #include "FrameSaver.h"
+#include "MessageQueue.h"
 #include <spdlog/spdlog.h>
-
-constexpr const char* RESIZER_IN_QUEUE="/RESIZER_IN_QUEUE";
-constexpr const char* SAVER_IN_QUEUE="/SAVER_IN_QUEUE";
-constexpr const char* PUBLISHER_IN_QUEUE="/PUBLISHER_IN_QUEUE";
-
-constexpr const char* SHM_FRAME="/SHM_ORIGINAL_FRAME";
-constexpr const char* SHM_RESIZED_FRAME="/SHM_RESIZED_FRAME";
-constexpr const char* DEFAULT_OUTPUT_DIR="/home/pokyuser/Mp4ResizedFrames";
 
 /*
  * Mp4FrameSaver
@@ -28,19 +21,19 @@ int main(int argc, char** argv)
 	return -1;
     }
 
-    const std::string outputDir = (argc == 2) ? argv[1] : DEFAULT_OUTPUT_DIR;
+    const std::string outputDir = (argc == 2) ? argv[1] : Config::DEFAULT_OUTPUT_DIR;
 
-    MessageQueue resizerInQueue(RESIZER_IN_QUEUE, MessageQueue::DIRECTION::INPUT, true);
-    MessageQueue saverInQueue(SAVER_IN_QUEUE, MessageQueue::DIRECTION::INPUT, true);
-    MessageQueue publisherInQueue(PUBLISHER_IN_QUEUE, MessageQueue::DIRECTION::INPUT, true);
+    MessageQueue resizerInQueue(Config::RESIZER_IN_QUEUE, MessageQueue::DIRECTION::INPUT, true);
+    MessageQueue saverInQueue(Config::SAVER_IN_QUEUE, MessageQueue::DIRECTION::INPUT, true);
+    MessageQueue publisherInQueue(Config::PUBLISHER_IN_QUEUE, MessageQueue::DIRECTION::INPUT, true);
 
-    MessageQueue publishOutQueue(RESIZER_IN_QUEUE, MessageQueue::DIRECTION::OUTPUT);
-    MessageQueue resizerOutQueue(SAVER_IN_QUEUE, MessageQueue::DIRECTION::OUTPUT);
-    MessageQueue saverOutQueue(PUBLISHER_IN_QUEUE, MessageQueue::DIRECTION::OUTPUT);
+    MessageQueue publishOutQueue(Config::RESIZER_IN_QUEUE, MessageQueue::DIRECTION::OUTPUT);
+    MessageQueue resizerOutQueue(Config::SAVER_IN_QUEUE, MessageQueue::DIRECTION::OUTPUT);
+    MessageQueue saverOutQueue(Config::PUBLISHER_IN_QUEUE, MessageQueue::DIRECTION::OUTPUT);
 
-    FramePublisher publisher(publisherInQueue, publishOutQueue, SHM_FRAME);
-    FrameResizer resizer(resizerInQueue, resizerOutQueue, SHM_FRAME, SHM_RESIZED_FRAME);
-    FrameSaver saver(saverInQueue, saverOutQueue, SHM_RESIZED_FRAME, outputDir);
+    FramePublisher publisher(publisherInQueue, publishOutQueue, Config::SHM_FRAME);
+    FrameResizer resizer(resizerInQueue, resizerOutQueue, Config::SHM_FRAME, Config::SHM_RESIZED_FRAME);
+    FrameSaver saver(saverInQueue, saverOutQueue, Config::SHM_RESIZED_FRAME, outputDir);
 
     publisher.startThread();
     resizer.startThread();

@@ -1,9 +1,8 @@
 // client/main.cpp
+#include "Config.h"
 #include "MessageQueue.h"
 #include <spdlog/spdlog.h>
 #include <string>
-
-constexpr const char* PUBLISHER_IN_QUEUE="/PUBLISHER_IN_QUEUE";
 
 int main(int argc, char** argv)
 {
@@ -12,7 +11,7 @@ int main(int argc, char** argv)
         return -1;
     }
     std::string videoPath(argv[1]);
-    MessageQueue saverOutQueue(PUBLISHER_IN_QUEUE, MessageQueue::DIRECTION::OUTPUT);
+    MessageQueue saverOutQueue(Config::PUBLISHER_IN_QUEUE, MessageQueue::DIRECTION::OUTPUT);
     saverOutQueue.send(std::string("path:") + videoPath);
     return 0;
 }
