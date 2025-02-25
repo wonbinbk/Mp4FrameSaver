@@ -87,7 +87,7 @@ void FramePublisher::processVideo(const std::string& videoPath)
 
 void FramePublisher::processVideoThread(const std::string& videoPath)
 {
-    cv::VideoCapture cap(videoPath);
+    cv::VideoCapture cap(videoPath, cv::CAP_FFMPEG);
     if (!cap.isOpened()) {
         spdlog::error("FramePublisher: unable to open video in path {} for processing", videoPath);
         return;
