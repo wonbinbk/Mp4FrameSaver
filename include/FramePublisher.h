@@ -9,7 +9,7 @@
 
 class FramePublisher : public Service {
 public:
-    FramePublisher(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmFrame);
+    FramePublisher(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmFrame, std::function<void(bool)> doneCallback);
     ~FramePublisher() override;
 
     FramePublisher(const FramePublisher&) = delete;
@@ -32,6 +32,7 @@ private:
     bool mFrameProcessed = false;
     std::mutex mMutex;
     std::condition_variable mCv;
+    std::function<void(bool)> mNotifyCb;
 };
 
 #endif // FRAME_PUBLISHER_H

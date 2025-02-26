@@ -20,7 +20,7 @@ struct Message {
         FrameInfo(int rows, int columns, int channels, int type) : rows(rows), columns(columns), channels(channels), type(type) {}
         FrameInfo(const cv::Mat& mat) : rows(mat.rows), columns(mat.cols), channels(mat.channels()), type(mat.type()) {}
         FrameInfo() {};
-	// Helpful macro: ref: https://json.nlohmann.me/api/macros/nlohmann_define_type_intrusive/
+        // Helpful macro: ref: https://json.nlohmann.me/api/macros/nlohmann_define_type_intrusive/
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(FrameInfo, rows, columns, channels, type);
     } frameInfo;
     Message(const std::string& vidPath, MESSAGE_TYPE_ENUMS type, int rows, int columns, int channels, int pixelType)

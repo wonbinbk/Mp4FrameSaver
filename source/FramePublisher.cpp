@@ -10,7 +10,7 @@
 static constexpr const char* PATH_HEADER = "path:";
 static const size_t PATH_HEADER_SIZE = 5;
 
-FramePublisher::FramePublisher(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmFrame) : Service(inQueue, outQueue), mShmFrame(shmFrame)
+FramePublisher::FramePublisher(MessageQueue& inQueue, MessageQueue& outQueue, const std::string& shmFrame, std::function<void(bool)> doneCallback) : Service(inQueue, outQueue), mShmFrame(shmFrame), mNotifyCb(std::move(doneCallback))
 {
     mShmFd = shm_open(shmFrame.c_str(), O_CREAT | O_RDWR, 0644);
     if (mShmFd < 0) {
@@ -69,6 +69,7 @@ void FramePublisher::processVideo(const std::string& videoPath)
 {
     if (mBusy.load()) {
         spdlog::error("FramePublisher: Still busy processing file {}", mVideoFileName);
+        mNotifyCb(mBusy);
         return;
     }
 
@@ -114,4 +115,5 @@ void FramePublisher::processVideoThread(const std::string& videoPath)
     }
     spdlog::info("FramePublisher: done processing file {}", videoPath);
     mBusy = false;
+    mNotifyCb(mBusy);
 }

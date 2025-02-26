@@ -31,7 +31,13 @@ int main(int argc, char** argv)
     MessageQueue resizerOutQueue(Config::SAVER_IN_QUEUE, MessageQueue::DIRECTION::OUTPUT);
     MessageQueue saverOutQueue(Config::PUBLISHER_IN_QUEUE, MessageQueue::DIRECTION::OUTPUT);
 
-    FramePublisher publisher(publisherInQueue, publishOutQueue, Config::SHM_FRAME);
+    // A method for publisher to notify its client
+    MessageQueue clientInQueue(Config::CLIENT_IN_QUEUE, MessageQueue::DIRECTION::OUTPUT, true);
+    std::function<void(bool)> notifyCb = [&clientInQueue](bool busy) -> void {
+        std::string message = busy ? "BUSY" : "DONE";
+        clientInQueue.send(message);
+    };
+    FramePublisher publisher(publisherInQueue, publishOutQueue, Config::SHM_FRAME, notifyCb);
     FrameResizer resizer(resizerInQueue, resizerOutQueue, Config::SHM_FRAME, Config::SHM_RESIZED_FRAME);
     FrameSaver saver(saverInQueue, saverOutQueue, Config::SHM_RESIZED_FRAME, outputDir);
 
